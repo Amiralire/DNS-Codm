@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# رنگ سبز برای نمایش نام چنل و آیدی
+GREEN='\033[0;32m'
+RESET='\033[0m'
+
+# نمایش نام چنل و آیدی شخص سازنده
+channel_name="DNS | Codm"
+creator_id="@Mebot9"
+echo -e "${GREEN}Channel: $channel_name\nCreator ID: $creator_id${RESET}\n"
+
+# رنج‌های IP معمول برای هر کشور
+declare -A ranges
+ranges["Japan"]="153.128.0.0/12 106.128.0.0/10 1.33.0.0/16"
+ranges["Germany"]="80.128.0.0/10 88.64.0.0/11 79.192.0.0/10"
+ranges["United Kingdom"]="2.16.0.0/13 82.0.0.0/11 62.128.0.0/11"
+
+get_random_ip() {
+    cidr=$1
+    # محاسبه آدرس شبکه و تعداد هاست‌ها
+    IFS=/ read ip mask <<< "$cidr"
+    IFS=. read -r i1 i2 i3 i4 <<< "$ip"
+    ip_start=$(( (i1 << 24) + (i2 << 16) + (i3 << 8) + i4 ))
+    ip_end=$(( ip_start + (1 << (32 - mask)) - 2 ))
+    random_ip=$(( ip_start + (RANDOM % (ip_end - ip_start + 1)) ))
+    echo "$(( (random_ip >> 24) & 255 )).$(( (random_ip >> 16) & 255 )).$(( (random_ip >> 8) & 255 )).$(( random_ip & 255 ))"
+}
+
+# تولید IP‌های تصادفی برای هر کشور
+declare -A random_ips
+for country in "${!ranges[@]}"; do
+    cidr_list=(${ranges[$country]})
+    cidr=${cidr_list[$RANDOM % ${#cidr_list[@]}]}  # انتخاب یک رنج تصادفی از لیست رنج‌ها
+    random_ips[$country]=$(get_random_ip "$cidr")
+done
+
+# دو IP ثابت
+fixed_ips=("10.202.10.10" "78.157.42.100")
+
+# نمایش خروجی
+for country in "${!random_ips[@]}"; do
+    echo "$country: ${random_ips[$country]}"
+done
+echo "Fixed IPs: ${fixed_ips[*]}"
